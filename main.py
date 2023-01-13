@@ -3,7 +3,35 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, classification_report
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+
+
+def evaluation(model, x_train_std, y_train, x_test, y_test, train=True):
+    if train:
+        pred = model.predict(x_train_std)
+        classifier_report = pd.DataFrame(classification_report(y_train, pred, output_dict=True))
+        print("Train Result:\n================================================")
+        print(f"Accuracy Score: {accuracy_score(y_train, pred) * 100:.2f}%")
+        print("_______________________________________________")
+        print(f"F1 Score: {round(f1_score(y_train, pred), 2)}")
+        print("_______________________________________________")
+        print(f"CLASSIFICATION REPORT:\n{classifier_report}")
+        print("_______________________________________________")
+        print(f"Confusion Matrix: \n {confusion_matrix(y_train, pred)}\n")
+
+    if not train:
+        pred = model.predict(x_test)
+        classifier_report = pd.DataFrame(classification_report(y_test, pred, output_dict=True))
+        print("Test Result:\n================================================")
+        print(f"Accuracy Score: {accuracy_score(y_test, pred) * 100:.2f}%")
+        print("_______________________________________________")
+        print(f"F1 Score: {round(f1_score(y_test, pred), 2)}")
+        print("_______________________________________________")
+        print(f"CLASSIFICATION REPORT:\n{classifier_report}")
+        print("_______________________________________________")
+        print(f"Confusion Matrix: \n {confusion_matrix(y_test, pred)}\n")
 
 
 def data_analyse():
@@ -35,20 +63,6 @@ def data_analyse():
     ax2.set_title("Dependecies of values", fontdict={'weight': 'bold'})
     # Диабетом чаще всего болеют при высоком уровне глюкозы
 
-    # График зависимости уровня глюкозы и конечного результата
-    ax3 = ax[1, 0]
-    ax3.grid()
-    ax3.set_title('Average number of pregnancies in different ages', fontdict={'weight': 'bold'})
-    ax3.set_xlabel('Age')
-    ax3.set_ylabel('Number of pregnancies')
-    ax3.bar('A', df[df['Age'].between(20, 30)]['Pregnancies'].mean(), width=0.2)
-    ax3.bar('B', df[df['Age'].between(30, 40)]['Pregnancies'].mean(), width=0.2)
-    ax3.bar('C', df[df['Age'].between(40, 50)]['Pregnancies'].mean(), width=0.2)
-    ax3.bar('D', df[df['Age'].between(50, 60)]['Pregnancies'].mean(), width=0.2)
-    ax3.bar('E', df[df['Age'].between(60, 70)]['Pregnancies'].mean(), width=0.2)
-    ax3.legend(['Between 20 and 30', 'Between 30 and 40',
-                'Between 40 and 50', 'Between 50 and 60',
-                'Between 60 and 70'])
     # Предугадывания
     x = df['Glucose']
     y = df['Outcome']
@@ -62,7 +76,6 @@ def data_analyse():
     log = LogisticRegression()
     log.fit(x_train, y_train)
     y_pred = log.predict(x_test)
-    print(y_pred)
 
     ax4 = ax[1, 1]
     ax4.set_title('Accuracy of prediction', fontdict={'weight': 'bold'})
@@ -78,7 +91,23 @@ def data_analyse():
     auc = metrics.roc_auc_score(y_test, y_pred_proba)
     ax4.plot(fpr, tpr, label="auc=" + str(auc))
     ax4.legend(loc=4)
+    # График зависимости уровня глюкозы и конечного результата
+    ax3 = ax[1, 0]
+    ax3.grid()
+    accuracy_scores = []
+    knn = ''
+    for i in range(1, 10):
+        knn = KNeighborsClassifier(n_neighbors=i)
+        knn.fit(x_train, y_train)
+        accuracy_scores.append(accuracy_score(y_test, knn.predict(x_test)))
+
+    ax3.set_title('Accuracy of prediction', fontdict={'weight': 'bold'})
+    ax3.plot(accuracy_scores)
     plt.show()
+    print('KNN CLASSIFICATION')
+    evaluation(knn, x_train, y_train, x_test, y_test, True)
+    print('LOGISTIC REGRESSION')
+    evaluation(log, x_train, y_train, x_test, y_test, True)
 
 
 def main():
